@@ -2,6 +2,17 @@
 
 golang command for controlling Mi LED Desk Lamp - but probably works for other Yeelight lights
 
+# to build
+
+If you have a working go environment:
+
+```
+go install .
+```
+
+You should now have a `myeelight` command in `~/go/bin`
+
+
 # NOTE - this is very first drafty but it works
 
 See the code for more but..
@@ -79,3 +90,4 @@ $ myeelight warm , cold , warm , cold , warm
 
 Need to be able to add smooth transition time to each arg, ex: `myeelight off:5000`
 
+Try out the cron commands.
