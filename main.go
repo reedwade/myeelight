@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -29,6 +30,12 @@ func init() {
 
 		"high": brightnessCommand(100),
 		"low":  brightnessCommand(1),
+
+		"get": `{"id": 1, "method": "get_prop",  "params":["power", "bright", "ct", "flowing","name"]}`,
+
+		"flow": `{"id": 1, "method":"stop_cf", "params":[]}`, // start_cf's look like flow:count:action:args
+
+		"blink": `{"id":1,"method":"start_cf","params":[1, 0, "50,2,1000,1"]}`,
 	}
 }
 
@@ -86,18 +93,39 @@ func main() {
 		}
 
 		if arg == "listen" {
+			fmt.Println("listening, type ^C to exit")
 			<-make(chan bool) // block forver
 		}
 
 		cmd := commands[arg]
 
-		if numeric, err := strconv.Atoi(arg); err == nil {
-			if numeric == 0 {
-				cmd = commands["off"]
-			} else if numeric > 1000 {
-				cmd = colourTemperatureCommand(numeric)
+		if cmd == "" && strings.HasPrefix(arg, "flow:") {
+			options := strings.Split(arg, ":")
+			if len(options) != 4 {
+				log.Fatal("flow with args must be flow:count:action:args")
+			}
+			cmd = fmt.Sprintf(`{"id":1,"method":"start_cf","params":[%v, %v, "%v"]}`, options[1], options[2], options[3])
+		}
+
+		if cmd == "" && strings.HasPrefix(arg, "rest:") {
+			if d, err := time.ParseDuration(arg[5:]); err != nil {
+				log.Fatalf("can't parse duration from %v : %v", arg, err)
 			} else {
-				cmd = brightnessCommand(numeric)
+				fmt.Printf("resting for %v\n", d)
+				time.Sleep(d)
+				continue
+			}
+		}
+
+		if cmd == "" {
+			if numeric, err := strconv.Atoi(arg); err == nil {
+				if numeric == 0 {
+					cmd = commands["off"]
+				} else if numeric > 1000 {
+					cmd = colourTemperatureCommand(numeric)
+				} else {
+					cmd = brightnessCommand(numeric)
+				}
 			}
 		}
 
